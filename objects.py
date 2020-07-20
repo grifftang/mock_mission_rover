@@ -1,4 +1,5 @@
 import math, random
+from tkinter import *
 
 class Rover(object):
   def __init__(self):
@@ -33,93 +34,97 @@ class Rover(object):
 
     #Thermal data
     self.temp = 0
+
+  # Returns the communication strength status
   def get_comm_status(self):
     if self.lander.earthConnected:
-      print("Communication Status:")
-      print("Earth <--✓--> Lander (Obviously)")
-      print("Lander <--"+str(self.landerConnectionStrength)+"%--> Rover")
+      return "Communication Status:\n" + "Earth <--✓--> Lander (Obviously)\n" + "Lander <--" + str(self.landerConnectionStrength) + "%--> Rover"
     else:
-      print("Lander uplink connection failed")
+      return "Lander uplink connection failed"
 
+  # Returns NSS data
   def get_nss_data(self):
     if self.landerConnectionStrength > 0:
-      for d in self.nSystem.dataLog:
-        print(d)
+      return self.nSystem.dataLog
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed..."
 
+  # Returns telemetry log of rover
   def get_telemetry_log(self):
     if self.landerConnectionStrength > 0:
-      print("Time: Position: Battery: Solar: Comms: NSS:")
+      result = "Time: Position: Battery: Solar: Comms: NSS:\n"
       for t in self.telemetryLog:
-        print(" "+str(t.time)+"hr", end="   ")
-        print(t.pos,end="     ")
-        print(str(int(t.battery/2))+"%", end="     ")
-        print(str(int(t.solar))+"%",end="    ")
-        print(t.connectionStrength, end="    ")
-        print(t.nss,end="")
-        print()
+        #result += " " + str(t.time) + "hr" + "   \n" + t.pos + "     \n" + str(int(t.battery/2))+"%" + "     \n" + str(int(t.solar))+"%" + "    \n" + t.connectionStrength + "    \n" + t.nss + "\n"
+        return "temp"
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed...\n"
   
+  # Returns the status of the solar panel (deployed & strength)
   def get_solar_status(self):
     if self.landerConnectionStrength > 0:
       
       if not self.solarDeployed:
-        print("Solar panel not deployed")
+        return "Solar panel not deployed\n"
       else:
-        print("Panel deployed, collecting at "+str((self.checkSolarEff()/100) )+"%")
+        return "Panel deployed, collecting at "+str((self.checkSolarEff()/100) )+"%\n"
         #self.checkSolarEff() / 100
 
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed...\n"
     
 
+  # Returns the battery status of the rover
   def get_battery_status(self):
     if self.landerConnectionStrength > 0:
-      print("System powered at "+str(round(self.batteryCharge/self.maxCharge*100,2))+"%")
+      return "System powered at "+str(round(self.batteryCharge/self.maxCharge*100,2))+"%\n"
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed...\n"
 
+  # Adds a waypoint to the rover's trek list
   def push_waypoint(self, x,y,r,name):
     if self.landerConnectionStrength > 0:
       waypoint = Waypoint(x,y,r,name)
       self.trek.append(waypoint)
-      print("Added waypoint '"+name+"' at x="+str(x)+", y="+str(y))
+      return "Added waypoint '" + name + "' at x=" + str(x) + ", y=" + str(y)
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed..."
 
+  # Clears all waypoints from the rover's trek list
   def clear_trek(self):
     if self.landerConnectionStrength > 0:
       self.trek = []
-      print("Trek cleared")
+      return "Trek cleared"
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed..."
 
+  # Stop the rover and charge the battery until it's full
   def charge_to_full(self):
     if self.landerConnectionStrength > 0:
       while self.batteryCharge < 190:
         self.charge()
         self.tickTime()
+      return "Charged!"
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed..."
   
   #Operable by rover so no fail catch
   def charge_to_percent(self,percent):
     while self.batteryCharge/self.maxCharge*100 < percent:
       self.charge()
       self.tickTime()
+    return "Charged!"
 
   def drive_trek(self):
     if self.landerConnectionStrength > 0:
       print("Initiating trek of "+str(len(self.trek))+" waypoints")
       for waypoint in self.trek:
         self.drive(waypoint)
+      return "Trek complete"
 
       #self.clear_trek()
 
     else:
-      print("Communication to rover failed...")
+      return "Communication to rover failed..."
 
   def drive(self, waypoint):
     #while we are not near enough to our target
@@ -142,8 +147,7 @@ class Rover(object):
                   bestX = col
                   bestY = row
         if (self.x,self.y) == (bestX,bestY):
-          print("Rover crashed in obstacle")
-          return
+          return "Rover crashed in obstacle"
         #Move and take power cost
         self.lastDriveAngle = self.angleToWaypoint(Waypoint(bestX,bestY,0,"Best"))
         self.x = bestX
@@ -165,7 +169,6 @@ class Rover(object):
       self.tickTime()
       self.telemetryLog.append(Telemetry(self.time,self.x,self.y,self.batteryCharge,self.checkSolarEff(),self.landerConnectionStrength,self.nSystem.active))
       self.map.driveRecord[bestX][bestY] = "*"
-      
 
   def tickTime(self):
     self.time += 1
@@ -281,6 +284,34 @@ class Map(object):
         print(" "+ str(map[row][col]), end = " ")
       print()
 
+  def printTkMap(self):
+    master = Tk()
+
+    c = Canvas(master, width=1200, height=900)
+    c.pack()
+
+    obsColor = "red"
+    noObsColor = "black"
+    iceColor = "blue"
+    someIceColor = "white"
+    noIceColor = "gray"
+    size = 12
+
+    for y in range(self.height):
+      for x in range(self.width):
+        if self.obstacleMap[y][x] == "^":
+          outlineColor = obsColor
+        else:
+          outlineColor = noObsColor
+        if self.iceMap[y][x] == '-':
+          fillColor = noIceColor
+        elif self.iceMap[y][x] <= .49:
+          fillColor = iceColor
+        else:
+          fillColor = someIceColor
+    c.create_rectangle(x * size, y * size, (x + 1) * size, (y + 1) * size, fill=fillColor, outline= outlineColor)
+    
+    mainloop()
 
 class Waypoint(object):
   def __init__(self,x,y,r,name):
