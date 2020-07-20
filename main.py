@@ -1,30 +1,32 @@
+import math
 from objects import *
-
-def runMockMission():
+def initiateMockMission():
   #create a lander, rover, NSS
   moonRanger = Rover()
   nss = NSS()
   x1 = Lander()
-  moonRanger.nsystem = nss
+  testMap = Map()
+  testMap.sunAngle = 135
+  moonRanger.nSystem = nss
   moonRanger.lander = x1
+  moonRanger.map = testMap
+  #just combines the path driven view with the obstacle view
+  moonRanger.map.addObstaclesToRecord() 
 
-  #loop
-    #get user input command
-
-    #check valid command
-
-    #execute command
-
-    #send back the resulting data
-
-
-
-
-
-
-
+  #operator command testing
+  moonRanger.push_waypoint(10,20,2,"far east")
+  moonRanger.push_waypoint(18,2,2,"southern region")
+  moonRanger.push_waypoint(7,3,2,"back toward comm")
+  moonRanger.push_waypoint(5,0,4,"in comm")
+  moonRanger.drive_trek()
+  moonRanger.map.printMap(moonRanger.map.driveRecord)
+  moonRanger.get_telemetry_log()
+  #moonRanger.get_nss_data()
+  print(moonRanger.checkSolarEff())
+  moonRanger.get_solar_status()
+  moonRanger.get_battery_status()
+  moonRanger.get_comm_status()
 
 
-if __name__ == 'main':
-  print("yo")
-  runMockMission()
+
+initiateMockMission()
