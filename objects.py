@@ -54,24 +54,21 @@ class Rover(object):
     if self.landerConnectionStrength > 0:
       result = "Time: Position: Battery: Solar: Comms: NSS:\n"
       for t in self.telemetryLog:
-        #result += " " + str(t.time) + "hr" + "   \n" + t.pos + "     \n" + str(int(t.battery/2))+"%" + "     \n" + str(int(t.solar))+"%" + "    \n" + t.connectionStrength + "    \n" + t.nss + "\n"
-        return "temp"
+        result += " " + str(round(t.time, 1)) + "hr" + "   " + str(t.pos) + "     " + str(int(t.battery/2))+"%" + "     " + str(int(t.solar))+"%" + "    " + str(t.connectionStrength) + "    " + str(t.nss) + "\n"
+        print(result)
+      return result
     else:
       return "Communication to rover failed...\n"
-  
+
   # Returns the status of the solar panel (deployed & strength)
   def get_solar_status(self):
     if self.landerConnectionStrength > 0:
-      
-      if not self.solarDeployed:
-        return "Solar panel not deployed\n"
+      if self.solarDeployed:
+        return "Panel deployed, collecting at " + str(self.checkSolarEff()) + "%\n"
       else:
-        return "Panel deployed, collecting at "+str((self.checkSolarEff()/100) )+"%\n"
-        #self.checkSolarEff() / 100
-
+        return "Solar panel not deployed\n"
     else:
-      return "Communication to rover failed...\n"
-    
+        return "Communication to rover failed...\n"
 
   # Returns the battery status of the rover
   def get_battery_status(self):
@@ -79,6 +76,15 @@ class Rover(object):
       return "System powered at "+str(round(self.batteryCharge/self.maxCharge*100,2))+"%\n"
     else:
       return "Communication to rover failed...\n"
+
+  # Returns the rover's status as a string
+  def get_systems_status(self):
+    response = self.get_solar_status() + self.get_battery_status()
+    response += "NSS status is nominal.\n"
+    response += "Thermal status is nominal.\n"
+    response += "Software status is nominal.\n"
+    response += "Mechanical status is nominal.\n"
+    return response
 
   # Adds a waypoint to the rover's trek list
   def push_waypoint(self, x,y,r,name):
@@ -94,6 +100,12 @@ class Rover(object):
     if self.landerConnectionStrength > 0:
       self.trek = []
       return "Trek cleared"
+    else:
+      return "Communication to rover failed..."
+
+  def delete_trek_data(self):
+    if self.landerConnectionStrength > 0:
+      return "Data deleted"
     else:
       return "Communication to rover failed..."
 
@@ -158,8 +170,6 @@ class Rover(object):
 
       #charge check
       self.charge()
-      #nss collect data
-      self.nSystem.log(self.time,self.x,self.y,self.map)
       #comms check
       if self.distFrom(self.lander) <= self.lander.commRange:
         self.landerConnectionStrength = 100
@@ -167,14 +177,18 @@ class Rover(object):
         self.landerConnectionStrength = 0
       #record progress and tick
       self.tickTime()
+      #nss collect data
+      self.nSystem.log(self.time,self.x,self.y,self.map)
+      #collect telemetry data
       self.telemetryLog.append(Telemetry(self.time,self.x,self.y,self.batteryCharge,self.checkSolarEff(),self.landerConnectionStrength,self.nSystem.active))
       self.map.driveRecord[bestX][bestY] = "*"
 
   def tickTime(self):
-    self.time += 1
+    self.time += 0.1
 
   def charge(self):
-    self.batteryCharge += self.maxChargeRate * (self.checkSolarEff() / 100)
+    self.batteryCharge += self.maxChargeRate * self.checkSolarEff()
+    print(self.batteryCharge)
 
   def faultCheckPass(self):
     #battery has enough power
@@ -188,18 +202,8 @@ class Rover(object):
     return ((x2-x1)**2 + (y2-y1)**2)**0.5
 
   def checkSolarEff(self):
-    #if our trek has a waypoint
-    if self.trek != []:
-      #get the angle we're driving to that waypoint
-      print(self.angleToWaypoint(self.trek[0]))
-      driveAngle = abs(self.lastDriveAngle)#self.angleToWaypoint(self.trek[0])
-      #if we have a map loaded
-      if self.map != None:
-        sunAngle = self.map.sunAngle
-        #absolute value of the distance from 90 degree dif 
-        #i dont think this is right, but it'll do
-        difFromPerp = abs(90 - (sunAngle - driveAngle))
-      return 100 - difFromPerp
+    panelAngle = 360 % (self.lastDriveAngle + 90)
+    return math.sin(math.radians(abs(panelAngle - 180)))
 
   def angleToWaypoint(self,waypoint):
     rads = math.atan2(waypoint.y-self.y, waypoint.x-self.x)
@@ -219,7 +223,7 @@ class Lander(object):
     self.y = 0
     #Comms
     self.earthConnected = True
-    self.commRange = 10
+    self.commRange = 100
 
 class Map(object):
   def __init__(self):
@@ -287,29 +291,29 @@ class Map(object):
   def printTkMap(self):
     master = Tk()
 
-    c = Canvas(master, width=1200, height=900)
+    windowHeight = 500
+    c = Canvas(master, width=1200, height=windowHeight)
     c.pack()
 
-    obsColor = "red"
+    obsColor = "dark grey"
     noObsColor = "black"
     iceColor = "blue"
-    someIceColor = "white"
-    noIceColor = "gray"
-    size = 12
+    someIceColor = "light blue"
+    noIceColor = "white"
+    size = windowHeight / self.height
 
     for y in range(self.height):
       for x in range(self.width):
-        if self.obstacleMap[y][x] == "^":
-          outlineColor = obsColor
-        else:
-          outlineColor = noObsColor
+        outlineColor = noObsColor
         if self.iceMap[y][x] == '-':
           fillColor = noIceColor
         elif self.iceMap[y][x] <= .49:
           fillColor = iceColor
-        else:
+        elif self.iceMap[y][x] > .5:
           fillColor = someIceColor
-    c.create_rectangle(x * size, y * size, (x + 1) * size, (y + 1) * size, fill=fillColor, outline= outlineColor)
+        if self.obstacleMap[y][x] == "^":
+          fillColor = obsColor
+        c.create_rectangle(x * size, y * size, (x + 1) * size, (y + 1) * size, fill=fillColor, outline= outlineColor)
     
     mainloop()
 
@@ -319,6 +323,12 @@ class Waypoint(object):
     self.y = y
     self.radius = r
     self.name = name
+
+  def __str__(self):
+    return "(" + str(self.x) + ", " + str(self.y) + ")" + " Radius: " + str(self.radius) + " Name: " + self.name
+
+  def __repr__(self):
+    return self.__str__()
 
 class Telemetry(object):
   def __init__(self,time,x,y,battery,solar,connectionStrength,nss):

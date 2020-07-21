@@ -6,7 +6,6 @@ from slack.errors import SlackApiError
 
 def runMockMission():
   #operator command testing
-  #moonRanger.push_waypoint(10,20,2,"far east")
   #moonRanger.push_waypoint(18,2,2,"southern region")
   #moonRanger.drive_trek()
   #moonRanger.map.printMap(moonRanger.map.driveRecord)
@@ -42,6 +41,12 @@ def parse_command(**payload):
             response = moonRanger.get_solar_status()
         elif 'get_battery_status' in data.get('text', []):
             response = moonRanger.get_battery_status()
+        elif 'get_systems_status' in data.get('text', []):
+            response = moonRanger.get_systems_status()
+        elif 'get_trek_data' in data.get('text', []):
+            response = str(moonRanger.trek)
+        elif 'delete_trek_data' in data.get('text', []):
+            response = moonRanger.delete_trek_data()
         elif 'push_waypoint' in data.get('text', []):
             params = data.get('text', []).split()
             response = moonRanger.push_waypoint(int(params[1]), int(params[2]), int(params[3]), params[4])
@@ -78,5 +83,6 @@ moonRanger.lander = x1
 moonRanger.map = testMap
 #just combines the path driven view with the obstacle view
 moonRanger.map.addObstaclesToRecord() 
+moonRanger.map.printTkMap()
 
 runMockMission()
