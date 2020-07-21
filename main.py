@@ -6,8 +6,10 @@ from slack.errors import SlackApiError
 
 def runMockMission():
   #operator command testing
-  #moonRanger.push_waypoint(18,2,2,"southern region")
-  #moonRanger.drive_trek()
+  moonRanger.push_waypoint(20,20,2,"southern region")
+  moonRanger.push_waypoint(20,5,2,"out")
+  moonRanger.push_waypoint(0,0,2,"home region")
+  moonRanger.drive_trek()
   #moonRanger.map.printMap(moonRanger.map.driveRecord)
   #moonRanger.get_telemetry_log()
   #moonRanger.get_nss_data()
@@ -84,5 +86,7 @@ moonRanger.map = testMap
 #just combines the path driven view with the obstacle view
 moonRanger.map.addObstaclesToRecord() 
 moonRanger.map.printTkMap()
+
+
 
 runMockMission()

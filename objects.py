@@ -121,7 +121,9 @@ class Rover(object):
   
   #Operable by rover so no fail catch
   def charge_to_percent(self,percent):
-    while self.batteryCharge/self.maxCharge*100 < percent:
+    while (self.batteryCharge / self.maxCharge) * 100 < percent:
+      # Turns to face the sun
+      self.lastDriveAngle = 0
       self.charge()
       self.tickTime()
     return "Charged!"
@@ -130,11 +132,9 @@ class Rover(object):
     if self.landerConnectionStrength > 0:
       print("Initiating trek of "+str(len(self.trek))+" waypoints")
       for waypoint in self.trek:
+        print("new waypoint " + waypoint.name)
         self.drive(waypoint)
       return "Trek complete"
-
-      #self.clear_trek()
-
     else:
       return "Communication to rover failed..."
 
@@ -145,6 +145,9 @@ class Rover(object):
     #collect telemetry data
     self.telemetryLog.append(Telemetry(self.time,self.x,self.y,self.batteryCharge,self.checkSolarEff(),self.landerConnectionStrength,self.nSystem.active))
     while(self.distFrom(waypoint) > waypoint.radius):
+      print(str(self.x) + ", " + str(self.y))
+      print(self.lastDriveAngle)
+      print(self.checkSolarEff())
       #for each possible next pixel
       bestDist = self.map.width*10 #unreachably far min
       bestX = self.x
@@ -167,7 +170,7 @@ class Rover(object):
         #Move and take power cost
         self.lastDriveAngle = self.angleToWaypoint(Waypoint(bestX,bestY,0,"Best"))
         self.x = bestX
-        self.y= bestY
+        self.y = bestY
         self.batteryCharge -= self.drivePowerCost
       else:
         self.charge_to_percent(50)
@@ -186,13 +189,13 @@ class Rover(object):
       #collect telemetry data
       self.telemetryLog.append(Telemetry(self.time,self.x,self.y,self.batteryCharge,self.checkSolarEff(),self.landerConnectionStrength,self.nSystem.active))
       self.map.driveRecord[bestX][bestY] = "*"
+    print("arrived")
 
   def tickTime(self):
     self.time += 0.1
 
   def charge(self):
     self.batteryCharge += self.maxChargeRate * self.checkSolarEff()
-    print(self.batteryCharge)
 
   def faultCheckPass(self):
     #battery has enough power
@@ -200,18 +203,20 @@ class Rover(object):
     #add more later
 
   def distFrom(self,waypoint):
-    return ( (waypoint.x -self.x)**2 + (waypoint.y - self.y)**2 )**0.5
+    return math.sqrt((waypoint.x - self.x)**2 + (waypoint.y - self.y)**2)
 
   def dist(self,x1,y1,x2,y2):
     return ((x2-x1)**2 + (y2-y1)**2)**0.5
 
   def checkSolarEff(self):
-    panelAngle = 360 % (self.lastDriveAngle + 90)
+    panelAngle = 360 % (int(abs(self.lastDriveAngle)) + 90)
     return math.sin(math.radians(abs(panelAngle - 180)))
 
   def angleToWaypoint(self,waypoint):
     rads = math.atan2(waypoint.y-self.y, waypoint.x-self.x)
+    print(rads)
     return math.degrees(rads)
+
 class NSS(object):
   def __init__(self):
     self.active = True
@@ -230,7 +235,7 @@ class Lander(object):
 
 class Map(object):
   def __init__(self):
-    self.obstacleOdds = 4 #1/4
+    self.obstacleOdds = 10 #1/4
     self.sunAngle = 0
     self.width = 20
     self.height = 20
