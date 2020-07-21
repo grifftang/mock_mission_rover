@@ -140,6 +140,10 @@ class Rover(object):
 
   def drive(self, waypoint):
     #while we are not near enough to our target
+    #nss collect data
+    self.nSystem.log(self.time,self.x,self.y,self.map)
+    #collect telemetry data
+    self.telemetryLog.append(Telemetry(self.time,self.x,self.y,self.batteryCharge,self.checkSolarEff(),self.landerConnectionStrength,self.nSystem.active))
     while(self.distFrom(waypoint) > waypoint.radius):
       #for each possible next pixel
       bestDist = self.map.width*10 #unreachably far min
@@ -208,7 +212,6 @@ class Rover(object):
   def angleToWaypoint(self,waypoint):
     rads = math.atan2(waypoint.y-self.y, waypoint.x-self.x)
     return math.degrees(rads)
-
 class NSS(object):
   def __init__(self):
     self.active = True
@@ -305,13 +308,13 @@ class Map(object):
     for y in range(self.height):
       for x in range(self.width):
         outlineColor = noObsColor
-        if self.iceMap[y][x] == '-':
+        if self.iceMap[x][y] == '-':
           fillColor = noIceColor
-        elif self.iceMap[y][x] <= .49:
+        elif self.iceMap[x][y] <= .49:
           fillColor = iceColor
-        elif self.iceMap[y][x] > .5:
+        elif self.iceMap[x][y] > .5:
           fillColor = someIceColor
-        if self.obstacleMap[y][x] == "^":
+        if self.obstacleMap[x][y] == "^":
           fillColor = obsColor
         c.create_rectangle(x * size, y * size, (x + 1) * size, (y + 1) * size, fill=fillColor, outline= outlineColor)
     
