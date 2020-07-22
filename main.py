@@ -6,10 +6,10 @@ from slack.errors import SlackApiError
 
 def runMockMission():
   #operator command testing
-  moonRanger.push_waypoint(20,20,2,"southern region")
-  moonRanger.push_waypoint(20,5,2,"out")
-  moonRanger.push_waypoint(0,0,2,"home region")
-  moonRanger.drive_trek()
+  #moonRanger.push_waypoint(20,20,2,"southern region")
+  #moonRanger.push_waypoint(20,5,2,"out")
+  #moonRanger.push_waypoint(0,0,2,"home region")
+  #moonRanger.drive_trek()
   #moonRanger.map.printMap(moonRanger.map.driveRecord)
   #moonRanger.get_telemetry_log()
   #moonRanger.get_nss_data()

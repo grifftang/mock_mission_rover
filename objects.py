@@ -111,6 +111,7 @@ class Rover(object):
 
   # Stop the rover and charge the battery until it's full
   def charge_to_full(self):
+    self.lastDriveAngle = 90
     if self.landerConnectionStrength > 0:
       while self.batteryCharge < 190:
         self.charge()
@@ -123,7 +124,7 @@ class Rover(object):
   def charge_to_percent(self,percent):
     while (self.batteryCharge / self.maxCharge) * 100 < percent:
       # Turns to face the sun
-      self.lastDriveAngle = 0
+      self.lastDriveAngle = 90
       self.charge()
       self.tickTime()
     return "Charged!"
@@ -145,9 +146,6 @@ class Rover(object):
     #collect telemetry data
     self.telemetryLog.append(Telemetry(self.time,self.x,self.y,self.batteryCharge,self.checkSolarEff(),self.landerConnectionStrength,self.nSystem.active))
     while(self.distFrom(waypoint) > waypoint.radius):
-      print(str(self.x) + ", " + str(self.y))
-      print(self.lastDriveAngle)
-      print(self.checkSolarEff())
       #for each possible next pixel
       bestDist = self.map.width*10 #unreachably far min
       bestX = self.x
@@ -209,20 +207,18 @@ class Rover(object):
     return ((x2-x1)**2 + (y2-y1)**2)**0.5
 
   def checkSolarEff(self):
-    panelAngle = 360 % (int(abs(self.lastDriveAngle)) + 90)
-    return math.sin(math.radians(abs(panelAngle - 180)))
+    return abs(math.sin(math.radians(self.lastDriveAngle)))
 
   def angleToWaypoint(self,waypoint):
-    rads = math.atan2(waypoint.y-self.y, waypoint.x-self.x)
-    print(rads)
-    return math.degrees(rads)
+    angle = math.degrees(math.atan2(waypoint.y-self.y, waypoint.x-self.x))
+    return (angle + 450) % 360
 
 class NSS(object):
   def __init__(self):
     self.active = True
     self.dataLog = []
   def log(self,time,x,y,map):
-    self.dataLog.append([time,map.iceMap[x][y]])
+    self.dataLog.append([x, y, map.iceMap[x][y]])
 
 class Lander(object):
   def __init__(self):
@@ -231,14 +227,13 @@ class Lander(object):
     self.y = 0
     #Comms
     self.earthConnected = True
-    self.commRange = 100
+    self.commRange = 5
 
 class Map(object):
   def __init__(self):
     self.obstacleOdds = 10 #1/4
-    self.sunAngle = 0
-    self.width = 20
-    self.height = 20
+    self.width = 30
+    self.height = 30
     self.driveRecord = self.newMap()
     self.obstacleMap = self.randomObstacleMap()
     self.iceMap = self.randomIceMap()
@@ -257,7 +252,7 @@ class Map(object):
         line.append("-")
       blank.append(line)
     return blank
-  
+
   def randomIceMap(self):
     resultMap = self.newMap()
     for row in range(self.height):
@@ -275,7 +270,7 @@ class Map(object):
         if random.randint(1,self.obstacleOdds) == self.obstacleOdds:
           resultMap[row][col] = "^"
     return resultMap
-  
+
   def printMap(self,map):
     print("+  ",end="")
     for i in range(len(map[0])):
